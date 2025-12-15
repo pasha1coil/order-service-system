@@ -1,0 +1,102 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"order-service-system/common/closer"
+	"order-service-system/common/mongo"
+	"order-service-system/common/nats"
+	"order-service-system/order_service/internal/initialize"
+	"order-service-system/order_service/internal/server"
+	"time"
+
+	"go.uber.org/zap"
+)
+
+func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) error {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Recovered in app from a panic", zap.Any("error", r))
+		}
+	}()
+
+	logger.Info("Order service started", zap.Any("config", config))
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	shutdownGroup := closer.NewCloserGroup()
+
+	mongoDB, err := mongo.Connect(ctx, &mongo.ConnectDeps{
+		Configuration: &config.ExternalCfg.MongoConfig,
+		Timeout:       10 * time.Second,
+	})
+	if err != nil {
+		return fmt.Errorf("failed connection to db: %w", err)
+	}
+
+	natsConn, err := nats.Connect(config.ExternalCfg.NatsConfig)
+	if err != nil {
+		return fmt.Errorf("failed connection to nats: %w", err)
+	}
+
+	clients := initialize.NewClients(initialize.ClientsDeps{
+		Logger: logger,
+		Conn:   natsConn,
+	})
+
+	repositories, err := initialize.NewRepositories(ctx, initialize.RepositoriesDeps{
+		MongoDB: mongoDB,
+	})
+	if err != nil {
+		return fmt.Errorf("failed initialize repositories: %w", err)
+	}
+
+	services := initialize.NewServices(initialize.ServicesDeps{
+		Logger:       logger,
+		Clients:      clients,
+		Repositories: repositories,
+	})
+
+	rpcControllers := initialize.NewRpcControllers(initialize.RpcControllersDeps{
+		Logger:   logger,
+		Services: services,
+	})
+
+	serverGRPC, err := server.NewGRPC(server.DepsGRPC{Logger: logger})
+	if err != nil {
+		return fmt.Errorf("failed initialize gRPC server: %w", err)
+	}
+
+	serverGRPC.Register(rpcControllers)
+
+	go func() {
+		if err := serverGRPC.Run(config.GrpcURL); err != nil {
+			logger.Error("gRPC server failed", zap.Error(err))
+			cancel()
+		}
+	}()
+
+	shutdownGroup.Add(closer.CloserFunc(serverGRPC.Stop))
+	shutdownGroup.Add(closer.CloserFunc(func(ctx context.Context) error {
+		return natsConn.Drain()
+	}))
+	shutdownGroup.Add(closer.CloserFunc(mongoDB.Client().Disconnect))
+
+	<-ctx.Done()
+
+	timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer timeoutCancel()
+	if err := shutdownGroup.Call(timeoutCtx); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Error("Shutdown timed out", zap.Error(err))
+		} else {
+			logger.Error("Failed to shutdown services gracefully", zap.Error(err))
+		}
+		return err
+	}
+
+	logger.Info("Order service has stopped")
+	return nil
+}
