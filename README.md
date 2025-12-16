@@ -8,6 +8,7 @@
 - **notification-service** — подписывается на `order.paid`/`order.failed`, вызывает `UpdateOrderStatus` и логирует уведомление.
 - **MongoDB** — основное хранилище заказов.
 - **NATS** — шина данных.
+- **bbolt** — ин-мемори хранилище.
 
 Основные сабжекты:
 - `order.created` — при создании заказа.
