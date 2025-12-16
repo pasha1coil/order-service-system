@@ -40,7 +40,7 @@ services:
     environment:
       - NATS_URL=nats://nats:4222
       - ORDER_SERVICE_HOST=order-service:50051
-      - PAYMENT_SUCCESS_RATE=0.85
+      - PAYMENT_SUCCESS_RATE=0.5
       - NATS_CLIENT_NAME=billing-service
     depends_on:
       - order-service
