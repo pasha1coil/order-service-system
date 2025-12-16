@@ -31,13 +31,13 @@ type Deps struct {
 
 func NewOrderService(deps Deps) *OrderService {
 	if deps.Logger == nil {
-		panic("deps.Logger cannot be nil")
+		panic("logger must not be nil on <NewOrderService> of <OrderService>")
 	}
 	if deps.OrderRepo == nil {
-		panic("deps.OrderRepo cannot be nil")
+		panic("order repo must not be nil on <NewOrderService> of <OrderService>")
 	}
 	if deps.NatsClient == nil {
-		panic("deps.NatsClient cannot be nil")
+		panic("nats client must not be nil on <NewOrderService> of <OrderService>")
 	}
 	return &OrderService{
 		logger:     deps.Logger,
@@ -96,7 +96,10 @@ func (receiver *OrderService) CreateOrder(ctx context.Context, req *orderpb.Crea
 		TotalAmount: doc.TotalAmount,
 		CreatedAt:   doc.CreatedAt,
 	}); err != nil {
-		receiver.logger.Warn("failed to publish order.created", zap.Error(err))
+		receiver.logger.Warn("failed to publish event on <CreateOrder> of <OrderService>",
+			zap.String("subject", "order.created"),
+			zap.Error(err),
+		)
 	}
 
 	return utils.ConvertToProto(doc), nil

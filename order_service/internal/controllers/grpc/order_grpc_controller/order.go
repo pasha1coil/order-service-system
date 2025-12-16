@@ -17,7 +17,7 @@ type Deps struct {
 
 func NewOrderController(deps Deps) *OrderController {
 	if deps.OrderService == nil {
-		panic("deps.Service is required")
+		panic("order service must not be nil on <NewOrderController> of <OrderController>")
 	}
 
 	return &OrderController{

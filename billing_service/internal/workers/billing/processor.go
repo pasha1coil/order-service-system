@@ -36,13 +36,13 @@ type Deps struct {
 
 func NewProcessor(deps Deps) *Processor {
 	if deps.Logger == nil {
-		panic("logger is required")
+		panic("logger must not be nil on <NewProcessor> of <Processor>")
 	}
 	if deps.NatsConn == nil {
-		panic("nats connection is required")
+		panic("nats connection must not be nil on <NewProcessor> of <Processor>")
 	}
 	if deps.OrderClient == nil {
-		panic("order client is required")
+		panic("order client must not be nil on <NewProcessor> of <Processor>")
 	}
 
 	successRate := deps.SuccessRate
@@ -73,7 +73,10 @@ func (receiver *Processor) Start(ctx context.Context) (*nats.Subscription, error
 		return nil, err
 	}
 
-	receiver.logger.Info("listening for order.created", zap.String("subject", subjectOrderCreated), zap.String("queue", queueBilling))
+	receiver.logger.Info("listening for order.created on <Start> of <Processor>",
+		zap.String("subject", subjectOrderCreated),
+		zap.String("queue", queueBilling),
+	)
 	return sub, nil
 }
 
@@ -83,23 +86,23 @@ func (receiver *Processor) handleMessage(ctx context.Context, msg *nats.Msg) {
 
 	select {
 	case <-ctx.Done():
-		receiver.logger.Warn("context cancelled before processing")
+		receiver.logger.Warn("context cancelled before processing on <handleMessage> of <Processor>")
 		return
 	default:
 	}
 
 	var payload events.OrderCreatedPayload
 	if err := json.Unmarshal(msg.Data, &payload); err != nil {
-		receiver.logger.Error("failed to decode order.created", zap.Error(err))
+		receiver.logger.Error("failed to decode order.created on <handleMessage> of <Processor>", zap.Error(err))
 		return
 	}
 
 	if payload.OrderID == "" || payload.UserID == "" {
-		receiver.logger.Error("invalid payload", zap.Any("payload", payload))
+		receiver.logger.Error("invalid payload on <handleMessage> of <Processor>", zap.Any("payload", payload))
 		return
 	}
 
-	receiver.logger.Info("processing payment",
+	receiver.logger.Info("processing payment on <handleMessage> of <Processor>",
 		zap.String("order_id", payload.OrderID),
 		zap.String("user_id", payload.UserID),
 		zap.Float64("amount", payload.TotalAmount))
@@ -136,27 +139,27 @@ func (receiver *Processor) publishResult(ctx context.Context, payload events.Ord
 
 	data, err := json.Marshal(event)
 	if err != nil {
-		receiver.logger.Error("failed to marshal event", zap.Error(err))
+		receiver.logger.Error("failed to marshal event on <publishResult> of <Processor>", zap.Error(err))
 		return
 	}
 
 	if err := receiver.natsConn.Publish(subject, data); err != nil {
-		receiver.logger.Error("failed to publish billing event",
+		receiver.logger.Error("failed to publish billing event on <publishResult> of <Processor>",
 			zap.String("subject", subject),
 			zap.Error(err))
-		receiver.logger.Warn("continuing despite publish error")
+		receiver.logger.Warn("continuing despite publish error on <publishResult> of <Processor>")
 	} else {
-		receiver.logger.Info("published event",
+		receiver.logger.Info("published event on <publishResult> of <Processor>",
 			zap.String("subject", subject),
 			zap.String("order_id", payload.OrderID))
 	}
 
 	if _, err := receiver.orderClient.UpdateOrderStatus(ctx, payload.OrderID, status); err != nil {
-		receiver.logger.Error("failed to update order status", zap.String("order_id", payload.OrderID), zap.Error(err))
+		receiver.logger.Error("failed to update order status on <publishResult> of <Processor>", zap.String("order_id", payload.OrderID), zap.Error(err))
 		return
 	}
 
-	receiver.logger.Info("order status updated",
+	receiver.logger.Info("order status updated on <publishResult> of <Processor>",
 		zap.String("order_id", payload.OrderID),
 		zap.String("status", status.String()))
 }

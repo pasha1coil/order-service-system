@@ -24,7 +24,7 @@ type Deps struct {
 
 func NewOrderRepository(ctx context.Context, deps Deps) (*OrderRepository, error) {
 	if deps.Collection == nil {
-		panic("deps.Collection cannot be nil")
+		panic("collection must not be nil on <NewOrderRepository> of <OrderRepository>")
 	}
 
 	indexModel := mongo.IndexModel{

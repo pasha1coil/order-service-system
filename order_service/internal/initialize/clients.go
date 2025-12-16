@@ -17,6 +17,12 @@ type ClientsDeps struct {
 }
 
 func NewClients(deps ClientsDeps) *Clients {
+	if deps.Logger == nil {
+		panic("logger must not be nil on <NewClients> of <initialize>")
+	}
+	if deps.Conn == nil {
+		panic("nats connection must not be nil on <NewClients> of <initialize>")
+	}
 	return &Clients{
 		NatsClient: nats_client.NewClient(nats_client.Deps{
 			Logger: deps.Logger,

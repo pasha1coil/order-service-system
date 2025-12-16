@@ -17,6 +17,15 @@ type ServicesDeps struct {
 }
 
 func NewServices(deps ServicesDeps) *Services {
+	if deps.Logger == nil {
+		panic("logger must not be nil on <NewServices> of <initialize>")
+	}
+	if deps.Repositories == nil {
+		panic("repositories must not be nil on <NewServices> of <initialize>")
+	}
+	if deps.Clients == nil {
+		panic("clients must not be nil on <NewServices> of <initialize>")
+	}
 	return &Services{
 		OrderServices: order_service.NewOrderService(order_service.Deps{
 			Logger:     deps.Logger,

@@ -32,13 +32,13 @@ type Deps struct {
 
 func New(deps Deps) *Notifier {
 	if deps.Logger == nil {
-		panic("logger is required")
+		panic("logger must not be nil on <New> of <Notifier>")
 	}
 	if deps.NatsConn == nil {
-		panic("nats connection is required")
+		panic("nats connection must not be nil on <New> of <Notifier>")
 	}
 	if deps.OrderClient == nil {
-		panic("order client is required")
+		panic("order client must not be nil on <New> of <Notifier>")
 	}
 	return &Notifier{
 		logger:      deps.Logger,
@@ -66,7 +66,11 @@ func (receiver *Notifier) Start(ctx context.Context) ([]*nats.Subscription, erro
 		return nil, err
 	}
 
-	receiver.logger.Info("listening for payment events", zap.String("paid", subjectOrderPaid), zap.String("failed", subjectOrderFailed), zap.String("queue", queueNotification))
+	receiver.logger.Info("listening for payment events on <Start> of <Notifier>",
+		zap.String("paid", subjectOrderPaid),
+		zap.String("failed", subjectOrderFailed),
+		zap.String("queue", queueNotification),
+	)
 	return []*nats.Subscription{subPaid, subFailed}, nil
 }
 
@@ -79,16 +83,19 @@ func (receiver *Notifier) handlePaid(ctx context.Context, msg *nats.Msg) {
 
 	var payload events.OrderPaidPayload
 	if err := json.Unmarshal(msg.Data, &payload); err != nil {
-		receiver.logger.Error("failed to decode paid payload", zap.Error(err))
+		receiver.logger.Error("failed to decode paid payload on <handlePaid> of <Notifier>", zap.Error(err))
 		return
 	}
 
 	if _, err := receiver.orderClient.UpdateOrderStatus(ctx, payload.OrderID, orderpb.OrderStatus_PAID); err != nil {
-		receiver.logger.Error("failed to update order status", zap.String("order_id", payload.OrderID), zap.Error(err))
+		receiver.logger.Error("failed to update order status on <handlePaid> of <Notifier>", zap.String("order_id", payload.OrderID), zap.Error(err))
 		return
 	}
 
-	receiver.logger.Info("notified user about payment", zap.String("order_id", payload.OrderID), zap.String("user_id", payload.UserID))
+	receiver.logger.Info("notified user about payment on <handlePaid> of <Notifier>",
+		zap.String("order_id", payload.OrderID),
+		zap.String("user_id", payload.UserID),
+	)
 }
 
 func (receiver *Notifier) handleFailed(ctx context.Context, msg *nats.Msg) {
@@ -100,14 +107,18 @@ func (receiver *Notifier) handleFailed(ctx context.Context, msg *nats.Msg) {
 
 	var payload events.OrderFailedPayload
 	if err := json.Unmarshal(msg.Data, &payload); err != nil {
-		receiver.logger.Error("failed to decode failed payload", zap.Error(err))
+		receiver.logger.Error("failed to decode failed payload on <handleFailed> of <Notifier>", zap.Error(err))
 		return
 	}
 
 	if _, err := receiver.orderClient.UpdateOrderStatus(ctx, payload.OrderID, orderpb.OrderStatus_FAILED); err != nil {
-		receiver.logger.Error("failed to update order status", zap.String("order_id", payload.OrderID), zap.Error(err))
+		receiver.logger.Error("failed to update order status on <handleFailed> of <Notifier>", zap.String("order_id", payload.OrderID), zap.Error(err))
 		return
 	}
 
-	receiver.logger.Info("notified user about failure", zap.String("order_id", payload.OrderID), zap.String("user_id", payload.UserID), zap.String("reason", payload.Reason))
+	receiver.logger.Info("notified user about failure on <handleFailed> of <Notifier>",
+		zap.String("order_id", payload.OrderID),
+		zap.String("user_id", payload.UserID),
+		zap.String("reason", payload.Reason),
+	)
 }

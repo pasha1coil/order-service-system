@@ -17,11 +17,11 @@ import (
 func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) error {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("Recovered in app from a panic", zap.Any("error", r))
+			logger.Error("recovered from panic on <Run> of <app>", zap.Any("error", r))
 		}
 	}()
 
-	logger.Info("Order service started", zap.Any("config", config))
+	logger.Info("service start on <Run> of <app>", zap.String("service", "order"), zap.Any("config", config))
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -72,7 +72,7 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 
 	go func() {
 		if err := serverGRPC.Run(config.GrpcURL); err != nil {
-			logger.Error("gRPC server failed", zap.Error(err))
+			logger.Error("gRPC server failed on <Run> of <app>", zap.Error(err))
 			cancel()
 		}
 	}()
@@ -89,13 +89,13 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 	defer timeoutCancel()
 	if err := shutdownGroup.Call(timeoutCtx); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			logger.Error("Shutdown timed out", zap.Error(err))
+			logger.Error("shutdown timed out on <Run> of <app>", zap.Error(err))
 		} else {
-			logger.Error("Failed to shutdown services gracefully", zap.Error(err))
+			logger.Error("failed to shutdown services gracefully on <Run> of <app>", zap.Error(err))
 		}
 		return err
 	}
 
-	logger.Info("Order service has stopped")
+	logger.Info("service stopped on <Run> of <app>", zap.String("service", "order"))
 	return nil
 }

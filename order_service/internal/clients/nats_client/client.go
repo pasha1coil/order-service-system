@@ -21,8 +21,11 @@ type Deps struct {
 }
 
 func NewClient(deps Deps) *Client {
+	if deps.Logger == nil {
+		panic("logger must not be nil on <NewClient> of <NatsClient>")
+	}
 	if deps.Conn == nil {
-		panic("nats connection required")
+		panic("nats connection must not be nil on <NewClient> of <NatsClient>")
 	}
 	return &Client{
 		logger: deps.Logger,
@@ -47,7 +50,7 @@ func (receiver *Client) PublishOrderCreated(event models.OrderCreatedEvent) erro
 		return fmt.Errorf("publish event: %w", err)
 	}
 
-	receiver.logger.Info("published event",
+	receiver.logger.Info("published event on <PublishOrderCreated> of <NatsClient>",
 		zap.String("subject", "order.created"),
 		zap.String("order_id", event.OrderID),
 		zap.Time("created_at", event.CreatedAt),

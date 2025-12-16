@@ -19,6 +19,15 @@ type WorkersDeps struct {
 }
 
 func NewWorkers(deps WorkersDeps) *Workers {
+	if deps.Logger == nil {
+		panic("logger must not be nil on <NewWorkers> of <initialize>")
+	}
+	if deps.NatsConn == nil {
+		panic("nats connection must not be nil on <NewWorkers> of <initialize>")
+	}
+	if deps.Clients == nil {
+		panic("clients must not be nil on <NewWorkers> of <initialize>")
+	}
 	return &Workers{
 		BillingProcessor: billing.NewProcessor(billing.Deps{
 			Logger:      deps.Logger,

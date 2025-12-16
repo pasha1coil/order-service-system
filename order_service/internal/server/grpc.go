@@ -46,10 +46,10 @@ func NewGRPC(deps DepsGRPC) (*GRPC, error) {
 }
 
 func (receiver *GRPC) Run(addr string) error {
-	receiver.logger.Info("Starting GRPC Server", zap.String("host", addr))
+	receiver.logger.Info("starting grpc server on <Run> of <GRPC>", zap.String("host", addr))
 
 	if err := receiver.listen(addr); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-		receiver.logger.Error("GRPC Listen error", zap.Error(err))
+		receiver.logger.Error("listen error on <Run> of <GRPC>", zap.Error(err))
 		return err
 	}
 	return nil
@@ -57,7 +57,7 @@ func (receiver *GRPC) Run(addr string) error {
 
 func (receiver *GRPC) Stop(_ context.Context) error {
 	receiver.grpc.GracefulStop()
-	receiver.logger.Info("Shutting down GRPC server...")
+	receiver.logger.Info("shutting down grpc server on <Stop> of <GRPC>")
 
 	return nil
 }
