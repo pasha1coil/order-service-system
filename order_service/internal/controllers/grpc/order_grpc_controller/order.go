@@ -4,32 +4,23 @@ import (
 	"context"
 	"order-service-system/order_service/internal/service/order_service"
 	orderpb "order-service-system/proto/order"
-
-	"go.uber.org/zap"
 )
 
 type OrderController struct {
 	orderpb.UnimplementedOrderServiceServer
-	logger       *zap.Logger
 	orderService *order_service.OrderService
 }
 
 type Deps struct {
-	Logger       *zap.Logger
 	OrderService *order_service.OrderService
 }
 
 func NewOrderController(deps Deps) *OrderController {
-	if deps.Logger == nil {
-		panic("deps.Logger is required")
-	}
-
 	if deps.OrderService == nil {
 		panic("deps.Service is required")
 	}
 
 	return &OrderController{
-		logger:       deps.Logger,
 		orderService: deps.OrderService,
 	}
 }

@@ -77,14 +77,13 @@ func (receiver *OrderService) CreateOrder(ctx context.Context, req *orderpb.Crea
 		total += float64(item.Quantity) * item.Price
 	}
 
-	now := time.Now().UTC()
 	doc := models.Order{
 		OrderID:     uuid.NewString(),
 		UserID:      req.UserId,
 		Items:       items,
 		TotalAmount: total,
 		Status:      orderpb.OrderStatus_PENDING.String(),
-		CreatedAt:   now,
+		CreatedAt:   time.Now(),
 	}
 
 	if err := receiver.orderRepo.Create(ctx, doc); err != nil {

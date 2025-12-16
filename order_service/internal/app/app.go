@@ -60,7 +60,6 @@ func Run(ctx context.Context, config initialize.Config, logger *zap.Logger) erro
 	})
 
 	rpcControllers := initialize.NewRpcControllers(initialize.RpcControllersDeps{
-		Logger:   logger,
 		Services: services,
 	})
 
